@@ -27,7 +27,10 @@ public class SessionManager {
 		for (Session session : sessions) {
 			session.close();
 		}
-
 		sessions.clear();
+	}
+
+	public List<Session> getSessions() {
+		return sessions;
 	}
 }

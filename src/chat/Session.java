@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 
 import static util.MyLogger.log;
 
@@ -30,21 +31,46 @@ public class Session implements Runnable{
 		try {
 			while(true) {
 				// 클라이언트로부터 문자 받기
-				String received = input.readUTF();
+				String received = input.readUTF().trim();
 
 				//클라이언트에게 문자 보내기
 				if(this.user != null) {
-					if(received.trim().startsWith("/message")) {
-						String[] msgInfo = received.split(" ");
-						if(msgInfo.length > 0) {
-							String message = msgInfo[1];
-							sessionManager.sendAllMessage("[전체메세지]" + this.user.getName() + ": " + message);
+					if(received.startsWith("/message")) {
+						String[] msg = received.split(" ");
+						if(msg.length > 0) {
+							String content = msg[1];
+							sessionManager.sendAllMessage("[전체메세지]" + this.user.getName() + ": " + content);
+						} else {
+							sendMessage("메시지를 입력하세요.");
 						}
+					} else if(received.startsWith("/change")){
+						String[] msg = received.split(" ");
+						if(msg.length > 0) {
+							String currentName = user.getName();
+							String content = msg[1];
+							user.changeName(content);
+							sendMessage("이름이 변경되었습니다.("+currentName + "->" + content + ")");
+						} else {
+							sendMessage("변경할 이름을 입력하세요.");
+						}
+					} else if(received.startsWith("/users")){
+						List<String> list = sessionManager.getSessions().stream().map(
+							session -> session.user.getName()
+						).toList();
+
+						StringBuilder sb = new StringBuilder();
+						for (int i = 0; i < list.size(); i++) {
+							if(i == list.size()-1) sb.append(list.get(i));
+							else sb.append(list.get(i)).append(",");
+						}
+
+						sendMessage(sb.toString());
+					} else if(received.startsWith("/exit")){
+						sessionManager.closeAll();
 					} else {
 						sendMessage(received);
 						log("[client <- server] " + received);
 					}
-
 				} else {
 					if(received.trim().startsWith("/join")) {
 						String[] joinInfo = received.split(" ");
